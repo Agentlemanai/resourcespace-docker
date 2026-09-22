@@ -1,0 +1,61 @@
+# ResourceSpace on Coolify (agentleman-ded-01) — deployed as a Git application with the
+# Docker Compose build pack, so Coolify builds the image from the Dockerfile in this repo.
+# Upstream's docker-compose.yaml is left untouched; this is the production shape.
+#
+# Domain in Coolify: set ONLY on "resourcespace" -> https://dam.garlomedia.com, port 80.
+#
+# The filestore is NOT a Docker volume: it is the Hetzner Storage Box (sub-account
+# u609705-sub4), mounted on the host over SMB and bind-mounted in here. The library is
+# measured in terabytes; the server's own disk is 437 GB.
+#
+# Passwords come from Coolify's environment variables. Never commit real values.
+
+services:
+  resourcespace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Pinned so a rebuild is the same code as the build you tested (see Dockerfile).
+        RS_SVN_REVISION: ${RS_SVN_REVISION:-29772}
+        PHP_UPLOAD_LIMIT: ${PHP_UPLOAD_LIMIT:-4096M}
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      # Storage Box over SMB. If that mount is missing the host path is an empty,
+      # write-protected directory, so ResourceSpace fails loudly instead of quietly
+      # filling the local disk with originals it will later consider lost.
+      - ${FILESTORE_PATH:-/mnt/resourcespace/filestore}:/var/www/html/filestore
+      # include/config.php is a symlink to /config/config.php (see Dockerfile): the
+      # installer writes here, and the configuration survives redeploys.
+      - rs-config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  mariadb:
+    # Pinned to an LTS series; upstream uses the moving "mariadb" tag.
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MYSQL_DATABASE:-resourcespace}
+      MARIADB_USER: ${MYSQL_USER:-resourcespace_rw}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  rs-config:
+  mariadb-data:
