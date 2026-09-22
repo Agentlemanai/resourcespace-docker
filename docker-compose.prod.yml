@@ -20,6 +20,10 @@ services:
         RS_SVN_REVISION: ${RS_SVN_REVISION:-29772}
         PHP_UPLOAD_LIMIT: ${PHP_UPLOAD_LIMIT:-4096M}
     restart: unless-stopped
+    # Apache serves on 80. Without this Coolify assumes its default of 3000 and
+    # routes the domain to a port nothing is listening on (502 Bad Gateway).
+    expose:
+      - "80"
     depends_on:
       mariadb:
         condition: service_healthy
