@@ -27,7 +27,13 @@ services:
       # Storage Box over SMB. If that mount is missing the host path is an empty,
       # write-protected directory, so ResourceSpace fails loudly instead of quietly
       # filling the local disk with originals it will later consider lost.
-      - ${FILESTORE_PATH:-/mnt/resourcespace/filestore}:/var/www/html/filestore
+      - type: bind
+        source: ${FILESTORE_PATH:-/mnt/resourcespace/filestore}
+        target: /var/www/html/filestore
+        bind:
+          # The host mount is shared: if the SMB mount drops and comes back, the
+          # container follows it instead of holding a stale, detached filesystem.
+          propagation: rslave
       # include/config.php is a symlink to /config/config.php (see Dockerfile): the
       # installer writes here, and the configuration survives redeploys.
       - rs-config:/config
