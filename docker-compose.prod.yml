@@ -42,7 +42,10 @@ services:
       # installer writes here, and the configuration survives redeploys.
       - rs-config:/config
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      # Probe Apache directly. / 302s to the public baseurl, and following that out through
+      # Traefik fails while the container is unhealthy (Traefik drops unhealthy containers),
+      # so the check could never recover.
+      test: ["CMD-SHELL", "wget -q --max-redirect=0 -O /dev/null http://127.0.0.1/login.php || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
