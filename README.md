@@ -65,3 +65,19 @@ and later reporting them missing.
 - The database is covered by the server's nightly backup. The filestore is not: it already
   lives on the Storage Box, so copying it there again would be pointless. Enable Hetzner's
   snapshots on the box for accidental-deletion protection.
+
+## Client portal plugin (`plugins/garlo_client_portal`)
+
+Adds one API call, `garlo_client_portal_provision(client_name, collection_ref, [username], [fullname])`,
+which gives a client a login that sees only their own approved material, the same way the
+hand-made "Client - Xbody" / "Client - Virtualitica" setups work: a value in the Client field,
+a "Client: X, approved only" search filter, a "Client - X" group (permissions copied from the
+Virtualitica group, featured access limited to `j<collection_ref>`) and a user with a generated
+password. Anything that already exists is reused; an existing user keeps its password.
+
+Activepieces calls it when "DAM access" is ticked on a client company in Twenty and writes the
+login back to the company. Settings (template group, Client field, Approved node) are in
+`plugins/garlo_client_portal/config/config.php`.
+
+After the first deploy that contains it: **Admin → System → Plugins → activate "Garlomedia client
+portal provisioning"**. Activation is stored in the database, so it survives later deploys.

@@ -61,6 +61,10 @@ RUN rm -f index.html \
  && chmod 777 filestore \
  && chmod -R 777 include/
 
+# Our own plugins. Activate once in Admin > Plugins; activation lives in the database,
+# so it survives redeploys.
+COPY plugins/ /var/www/html/plugins/
+
 # The installer writes include/config.php. Point it at a volume so the configuration
 # outlives the container; otherwise every redeploy hands you the installer again.
 RUN mkdir -p /config \
