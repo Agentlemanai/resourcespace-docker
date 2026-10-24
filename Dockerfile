@@ -51,7 +51,7 @@ ADD cronjob /etc/cron.daily/resourcespace
 
 # ResourceSpace has no release tags: releases/11.0 is a moving SVN branch. Pinning the
 # revision keeps a rebuild identical to the build that was tested. Bump it deliberately.
-ARG RS_SVN_REVISION=29772
+ARG RS_SVN_REVISION=29943
 
 WORKDIR /var/www/html
 

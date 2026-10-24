@@ -16,7 +16,7 @@ are left as they are, so syncing with upstream stays conflict-free.
 
 ## Changes from upstream
 
-- **The ResourceSpace revision is pinned** (`ARG RS_SVN_REVISION`, currently `29772`).
+- **The ResourceSpace revision is pinned** (`ARG RS_SVN_REVISION`, currently `29943`).
   Upstream checks out `releases/11.0`, a moving SVN branch with no tags, so two builds a
   week apart give different code. Upgrading is now a deliberate bump of that number.
 - **`include/config.php` is a symlink to `/config/config.php`**, a named volume. The web

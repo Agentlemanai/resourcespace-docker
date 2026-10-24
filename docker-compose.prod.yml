@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Pinned so a rebuild is the same code as the build you tested (see Dockerfile).
-        RS_SVN_REVISION: ${RS_SVN_REVISION:-29772}
+        RS_SVN_REVISION: ${RS_SVN_REVISION:-29943}
         PHP_UPLOAD_LIMIT: ${PHP_UPLOAD_LIMIT:-4096M}
     restart: unless-stopped
     environment:
