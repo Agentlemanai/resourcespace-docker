@@ -466,3 +466,71 @@ function api_garlo_client_portal_sync_project_tags(string $project_collections):
 
     return ajax_response_ok(['projects' => $projects, 'added' => $added, 'removed' => $removed, 'field' => $field]);
 }
+
+/**
+ * API: garlo_client_portal_check_user — read-only: what does this client login actually see?
+ *
+ * Switches to the login's own permissions for the rest of this API request and reports its group, the
+ * featured collections under its client collection it can open, and how many files it finds in each and
+ * in an empty search. Only works for logins in a "Client - " group; changes nothing.
+ *
+ * @return array JSend; data has user, group, client_collection, search_total, collections[].
+ */
+function api_garlo_client_portal_check_user(int $user_ref): array
+{
+    if (($g = garlo_cp_guard()) !== []) {
+        return $g;
+    }
+    $user = get_user($user_ref);
+    if (!is_array($user)) {
+        return garlo_cp_fail(404, "No login {$user_ref}");
+    }
+    if (!garlo_cp_is_client_group((int) $user['usergroup'])) {
+        return garlo_cp_fail(409, "{$user['username']} is not a client login");
+    }
+    $perms = explode(',', (string) ps_value('SELECT permissions value FROM usergroup WHERE ref = ?', ['i', (int) $user['usergroup']], ''));
+    $roots = array_values(array_filter(array_map(fn($p) => preg_match('/^j(\d+)$/', trim($p), $m) ? (int) $m[1] : 0, $perms)));
+
+    // A disabled login can't sign in, so it sees nothing.
+    if ((int) $user['approved'] !== 1) {
+        return ajax_response_ok([
+            'user' => $user['username'], 'approved' => 0, 'group' => '', 'search_total' => 0, 'collections' => [],
+        ]);
+    }
+
+    // From here on this request runs as the client login.
+    $userdata = validate_user(new PreparedStatementQuery('u.ref = ?', ['i', (int) $user_ref]), true);
+    if (!is_array($userdata) || count($userdata) === 0) {
+        return garlo_cp_fail(500, 'Could not load the login');
+    }
+    setup_user($userdata[0]);
+
+    $count = function (string $search): int {
+        $r = do_search($search, '', 'relevance', '0', -1, 'desc', false, DEPRECATED_STARSEARCH, false, false, '', false, false, true);
+        return is_array($r) ? count($r) : 0;
+    };
+
+    $collections = [];
+    foreach ($roots as $root) {
+        $tree = array_merge([$root], array_map('intval', ps_array('SELECT ref value FROM collection WHERE parent = ?', ['i', $root])));
+        foreach ($tree as $c) {
+            $col = get_collection($c);
+            $open = featured_collection_check_access_control($c);
+            $collections[] = [
+                'ref'   => $c,
+                'name'  => is_array($col) ? $col['name'] : '?',
+                'can_open' => $open,
+                'files_visible' => $open ? $count('!collection' . $c) : 0,
+                'files_in_collection' => count((array) get_collection_resources($c)),
+            ];
+        }
+    }
+
+    return ajax_response_ok([
+        'user'          => $user['username'],
+        'approved'      => (int) $user['approved'],
+        'group'         => ps_value('SELECT name value FROM usergroup WHERE ref = ?', ['i', (int) $user['usergroup']], ''),
+        'search_total'  => $count(''),
+        'collections'   => $collections,
+    ]);
+}
