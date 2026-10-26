@@ -1,8 +1,8 @@
 name: garlo_client_portal
 title: Garlomedia client portal provisioning
 author: Agentleman.ai
-version: 1.0
-desc: Adds the API call garlo_client_portal_provision, which gives a client a login that sees only their own approved material (Client field value, "Client - X" group, filter and user). Called by Activepieces when "DAM access" is ticked on a company in Twenty.
+version: 1.1
+desc: Client logins that see only the client's own approved material. API calls garlo_client_portal_provision (shared company login), garlo_client_portal_provision_person (a login per contact, optionally limited to some projects) and garlo_client_portal_sync_project_tags (tags files with their project). Called by Activepieces from Twenty.
 icon: users
 category: Integrations
 disable_group_select: 1
